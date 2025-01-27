@@ -1,8 +1,13 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import React from 'react';
+import './App.css';
+import AppRouter from 'router/AppRouter'; // AppRouter 임포트
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
-});
+function App() {
+  return (
+    <div className="App">
+      <AppRouter /> {/* AppRouter 사용 */}
+    </div>
+  );
+}
+
+export default App;

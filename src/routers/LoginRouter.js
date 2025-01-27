@@ -7,8 +7,8 @@ import GeneralLoginPage from 'pages/GeneralLoginPage/GeneralLoginPage';
 const LoginRouter = () => {
     return (
       <Routes>
-        <Route path="/login/general" element={<GeneralLoginPage />} />
-        <Route path="/login/corp" element={<CorpLoginPage />} />
+        <Route path="/general" element={<GeneralLoginPage />} />
+        <Route path="/corp" element={<CorpLoginPage />} />
       </Routes>
     );
   };
