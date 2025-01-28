@@ -10,7 +10,7 @@ const Header = () => {
       <Link to="/">
         <img src={logo} alt="Logo" className="w-20 h-20 ml-10 object-contain" />
         </Link>
-
+        
       {/* 오른쪽 메뉴 (큰 화면) */}
       <nav className="hidden md:flex space-x-6 mr-10">
         <a
