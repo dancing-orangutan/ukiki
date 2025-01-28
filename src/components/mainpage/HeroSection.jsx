@@ -1,11 +1,11 @@
 import React from 'react';
-import background from '../../assets/home_image.png'; // 배경 이미지 경로 설정
-import SearchBar from '../layout/SearchBar';
+import background from '@/assets/background/sea_img.png'; // 배경 이미지 경로 설정
+import SearchBar from '@/components/commons/SearchBar/SearchBar';
 
 const HeroSection = () => {
   return (
     <div
-      className="min-h-screen bg-cover bg-center flex flex-col md:flex-row items-center md:px-28 py-10"
+      className="w-full max-h-screen bg-cover bg-center flex flex-col md:flex-row items-center md:px-28 py-10"
       style={{
         backgroundImage: `url(${background})`,
       }}
