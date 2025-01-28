@@ -2,7 +2,7 @@ import React from 'react';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import logo from '../../assets/brand_example.png';
+import logo from '@/assets/brand_example.png';
 const brands = [
   { id: 1, name: 'Brand A', logo: logo },
   { id: 2, name: 'Brand B', logo: logo },
@@ -30,7 +30,7 @@ const PartnerBrandSlider = () => {
   };
 
   return (
-    <div className="partner-slider px-6 py-8">
+    <div className="partner-slider px-6 py-8 overflow-hidden">
       <h2 className="text-xl font-bold text-gray-800 mb-4">제휴 브랜드</h2>
       <Slider {...settings}>
         {brands.map((brand) => (
