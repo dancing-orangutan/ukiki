@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import logo from 'assets/icons/logo.svg'; // 상대 경로로 로고 불러오기
+import logo from '@/assets/icons/logo.svg'; 
 import { Link } from 'react-router-dom'; // react-router-dom에서 Link 가져오기
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false); // 메뉴 상태 관리
-
   return (
-    <header className="h-20 flex justify-between items-center px-6 bg-white shadow-md">
+    <header className="h-[62px] flex justify-between items-center px-6 bg-white shadow-md">
       {/* 왼쪽 로고 */}
       <Link to="/">
-        <img src={logo} alt="Logo" className="w-32 h-32 ml-10 object-contain" />
+        <img src={logo} alt="Logo" className="w-20 h-20 ml-10 object-contain" />
         </Link>
 
       {/* 오른쪽 메뉴 (큰 화면) */}
@@ -27,7 +26,7 @@ const Header = () => {
           회원가입
         </a>
         <a
-          href="/login"
+          href="/login/general"
           className="text-gray-600 hover:text-blue-500 transition duration-300"
         >
           로그인
