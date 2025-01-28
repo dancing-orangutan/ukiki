@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import Footer from '../../components/layout/Footer';
-import Header from '../../components/layout/Header';
+
 import CardList from '../../components/search-rooms/CardList';
 import Sidebar from '../../components/search-rooms/SideBar';
 
@@ -70,12 +69,10 @@ const SearchRoom = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
       <div className="flex flex-1">
         <Sidebar onFilter={handleFilter} />
         <CardList cards={filteredRooms} />
       </div>
-      <Footer />
     </div>
   );
 };
