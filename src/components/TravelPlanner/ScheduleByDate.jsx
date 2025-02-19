@@ -1,117 +1,166 @@
-// 날짜별 일정 구성
-
-import React, { useContext, useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import TravelPlanDetailContext from "../../contexts/TravelPlanDetailContext";
 import ProposalDetailContext from "../../contexts/ProposalDetailContext";
-import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import { 
-    Info, 
-    ScheduleByDateContainer,
-    ScheduleContainer,
-    SelectedPlacesContainer,
-    SelectedPlacesContent,
+import {
+  Info,
+  ScheduleByDateContainer,
+  ButtonContainer,
+  ScheduleContainer,
 } from "./style/ScheduleByDateStyle";
-import clock from  '../../assets/clock.png'; 
-import trashCan from '../../assets/trash_can.png'; 
+import Schedule from "./PlaceList/SchedulePlaces";
 
-const ScheduleByDate = ({onTogglePlaceSelection, selectedPlaces=[], onDeletePlace, onAddTime }) => {
-    const [timeData, setTimeData] = useState({});
-    const [showTimeInput, setShowTimeInput] = useState(null);
-    const { proposal } = useContext(ProposalDetailContext);
-    if(!proposal) {
-        return <div>로딩중</div>
+const ScheduleByDate = ({ 
+  onTogglePlaceSelection, 
+  selectedDayNumber, // sidebar에서 선택한 dayNumber (예: 1, 2, 3 등)
+  selectedPlaces,    // 상위(MainLayout)에서 관리하는 선택된 장소 목록
+  onDeletePlace, 
+  onAddTime 
+}) => {
+  const [timeData, setTimeData] = useState({});
+  const [showTimeInput, setShowTimeInput] = useState(null);
+
+  const travelPlanContext = useContext(TravelPlanDetailContext);
+  const proposalDetailContext = useContext(ProposalDetailContext);
+  
+  const proposal = travelPlanContext?.proposal || proposalDetailContext?.proposal;
+  
+  useEffect(() => {
+    console.log("선택된 날짜:", selectedDayNumber);
+  }, [selectedDayNumber]);
+
+  if (!proposal) {
+    return <div>로딩중</div>;
+  }
+
+  // 생성 페이지-> proposal.data.travelPlan, 수정 페이지-> proposal 자체를 사용
+  const travelPlan = proposal.data && proposal.data.travelPlan ? proposal.data.travelPlan : proposal;
+  const { arrivalCity, startDate, endDate, daySchedules = [] } = travelPlan;
+
+  // sidebar에서 선택한 dayNumber에 해당하는 스케줄 필터링
+  const existingSchedules = proposal.scheduleItems 
+    ? proposal.scheduleItems
+        .filter(item => Number(item.dayNumber) === Number(selectedDayNumber))
+        .map(item => ({
+          ...item,
+          dayNumber: selectedDayNumber,
+          // scheduleName, startTime, endTime, imageUrl 등 기존 필드를 그대로 사용
+          // 만약 값이 없으면 빈 문자열로 기본값 부여
+          startTime: item.startTime || "",
+          endTime: item.endTime || "",
+        }))
+    : (daySchedules.length > 0 
+        ? (daySchedules.find(ds => Number(ds.dayNumber) === Number(selectedDayNumber))?.schedules.map(schedule => ({
+              ...schedule,
+              dayNumber: selectedDayNumber,
+              // 기존 스케줄에 scheduleId 또는 placeId가 있다면 그대로 사용
+              placeId: schedule.scheduleId || schedule.placeId,
+              startTime: schedule.startTime || "",
+              endTime: schedule.endTime || "",
+          })) || [])
+        : []);
+
+  // 생성 페이지 혹은 수정 페이지에서 새로 추가된 장소 배열
+  const newSchedules = selectedPlaces || [];
+
+  // 두 배열을 합쳐 최종적으로 화면에 보여줄 배열 구성
+  const effectiveSelectedPlaces = (selectedPlaces && selectedPlaces.length > 0)
+    ? selectedPlaces
+    : existingSchedules;
+
+  // ISO 문자열일 경우 "T" 이후의 시간 부분만 추출하는 헬퍼 함수
+  const normalizeTime = (timeStr) => {
+    if (timeStr.includes("T")) {
+      return timeStr.split("T")[1].slice(0, 5);
     }
-    const { arrivalCity, startDate, endDate } = proposal.data.travelPlan;
+    return timeStr;
+  };
 
-    const handleSaveTime = (placeId, dayNumber) => {
-        const rawData = timeData[placeId];
-        if (!rawData || !rawData.startTime || !rawData.endTime) return;
-        const fullStartTime = computeFullTime(dayNumber, rawData.startTime);
-        const fullEndTime = computeFullTime(dayNumber, rawData.endTime);
-        onAddTime(placeId, fullStartTime, fullEndTime);
-        setShowTimeInput(null);
-      };
-
-    const handleTimeInputToggle = (placeId) => {
-        setShowTimeInput(showTimeInput ===placeId ? null: placeId)
-    };
-
-    const handleTimeChange = (placeId, type, value) => {
-        setTimeData((prevData) => ({
-            ...prevData,
-            [placeId]: {
-                ...prevData[placeId],
-                [type]: value,
-            },
-        }));
-    };
+  // 두 시간의 차이를 계산하여 "X시간 Y분" 형태의 문자열 반환
+  const computeDuration = (startTime, endTime) => {
+    const normStart = normalizeTime(startTime);
+    const normEnd = normalizeTime(endTime);
     
-    const computeFullTime = (dayNumber, timeStr) => {
+    const [sHours, sMinutes] = normStart.split(":").map(Number);
+    const [eHours, eMinutes] = normEnd.split(":").map(Number);
+    let startTotal = sHours * 60 + sMinutes;
+    let endTotal = eHours * 60 + eMinutes;
+    if (endTotal < startTotal) {
+      endTotal += 24 * 60;
+    }
+    const diff = endTotal - startTotal;
+    const hours = Math.floor(diff / 60);
+    const minutes = diff % 60;
+    return hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`;
+  };
 
-        const baseDate = new Date(startDate); 
-        baseDate.setDate(baseDate.getDate() + (dayNumber - 1));
+  // ISO 문자열일 경우에도 "HH:mm" 부분만 사용하여 날짜와 결합
+  const computeFullTime = (dayNumber, timeStr) => {
+    const normTime = normalizeTime(timeStr);
+    const baseDate = new Date(startDate);
+    baseDate.setDate(baseDate.getDate() + (dayNumber - 1));
 
-        const [hours, minutes] = timeStr.split(":");
-        baseDate.setHours(Number(hours), Number(minutes), 0, 0);
-        return baseDate.toISOString().split('.')[0];
-    };
-    
-    return (
-        <ScheduleByDateContainer>
-            <Info>
-                <h1> {arrivalCity.name}</h1>
-                <h3>
-                {startDate} ~ {endDate}
-                </h3>
-            </Info>
+    const [hours, minutes] = normTime.split(":");
+    baseDate.setHours(Number(hours), Number(minutes), 0, 0);
+    return baseDate.toISOString().split(".")[0];
+  };
 
-            {/* 선택된 장소들을 표시하는 영역 */}
-            {selectedPlaces.length > 0 && (
-                <SelectedPlacesContainer>
-                    {selectedPlaces.map((place, index) => (
-                        <div key={place.placeId} className="selected-place">
-                            <span className="index">{index+1}</span>
-                            <SelectedPlacesContent>
-                                <p className="place">{place.scheduleName}</p>
-                                <span className="btns">
-                                    <button onClick={()=> handleTimeInputToggle(place.placeId)}>
-                                        <img src={clock} alt="clock icon" className="w-6 h-6" />
-                                    </button>
-                                    <button onClick={() => {onDeletePlace(place.placeId)}}>
-                                        <img src={trashCan} alt="trashCan icon" className="w-6 h-6" />
-                                    </button>
-                                </span>
-                                
-                                {/* 시간 입력 폼 */}
-                                {showTimeInput === place.placeId && (
-                                    <div className="time-input">
-                                        <div className="time-input-fields">
-                                            <input
-                                                type="time"
-                                                value={timeData[place.placeId]?.startTime || ""}
-                                                onChange={(e) => handleTimeChange(place.placeId, "startTime", e.target.value)}
-                                            />
-                                            <input
-                                                type="time"
-                                                value={timeData[place.placeId]?.endTime || ""}
-                                                onChange={(e) => handleTimeChange(place.placeId, "endTime", e.target.value)}
-                                            />
-                                        </div>
-                                        <button className="btn" onClick={() => handleSaveTime(place.placeId, place.dayNumber)}>완료</button>
-                                    </div>
-                                )}
-                            </SelectedPlacesContent>
-                        </div>
-                    ))}
-                </SelectedPlacesContainer>
-            )}
-            <ScheduleContainer>
-                <button onClick={onTogglePlaceSelection}>
-                    장소 추가
-                </button>
-            </ScheduleContainer>
+  const handleSaveTime = (placeId, dayNumber) => {
+    const rawData = timeData[placeId];
+    if (!rawData || !rawData.startTime || !rawData.endTime) return;
+    const fullStartTime = computeFullTime(dayNumber, rawData.startTime);
+    const fullEndTime = computeFullTime(dayNumber, rawData.endTime);
+    onAddTime(placeId, fullStartTime, fullEndTime);
+    console.log("시간 저장 완료:", { placeId, fullStartTime, fullEndTime });
+    setShowTimeInput(null);
+  };
 
-        </ScheduleByDateContainer>
-    );
+  const handleTimeInputToggle = (placeId) => {
+    setShowTimeInput(showTimeInput === placeId ? null : placeId);
+  };
+
+  const handleTimeChange = (placeId, type, value) => {
+    setTimeData((prevData) => ({
+      ...prevData,
+      [placeId]: {
+        ...prevData[placeId],
+        [type]: value,
+      },
+    }));
+  };
+
+  return (
+    <ScheduleByDateContainer>
+      <Info>
+        {/* <h1>{arrivalCity.name}</h1> */}
+        <h3>{startDate} ~ {endDate}</h3>
+      </Info>
+
+      <ScheduleContainer>
+        {/* 선택된 장소들을 표시하는 영역 */}
+        {effectiveSelectedPlaces.length > 0 ? (
+          <Schedule
+            selectedPlaces={effectiveSelectedPlaces}
+            timeData={timeData}
+            onDeletePlace={onDeletePlace}
+            handleTimeInputToggle={handleTimeInputToggle}
+            showTimeInput={showTimeInput}
+            handleTimeChange={handleTimeChange}
+            handleSaveTime={handleSaveTime}
+            computeDuration={computeDuration}
+          />
+        ) : (
+          <div>해당 일자에 등록된 장소가 없습니다.</div>
+        )}
+
+        <ButtonContainer>
+          <button onClick={onTogglePlaceSelection}>
+            장소 추가
+          </button>
+        </ButtonContainer>
+      </ScheduleContainer>
+      
+    </ScheduleByDateContainer>
+  );
 };
 
 export default ScheduleByDate;

@@ -1,57 +1,22 @@
-import React from "react";
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
-import ProposalContent from "../components/agencyDetail/ProposalContent.jsx";
-import PlaceList from "../components/agencyDetail/PlaceList.jsx";
-import { ProposalDetailProvider } from "../contexts/ProposalDetailContext.jsx";
-import UserLocationMap from "../components/agencyDetail/UserLocationMap.jsx";
-import { useParams } from "react-router";
-import { useNavigate } from "react-router";
-import { 
-  ProposalDetailContainer,
-  ContentContainer,
-  ProposalContentWrapper,
-  MapAndPlaceWrapper,
-  MapWrapper,
-  PlaceListWrapper,
-  AcceptButton,
-  ButtonPosition
-} from "./style/ProposalDetailPageStyle.jsx"; // 스타일드 컴포넌트 import
+import React from 'react';
+import { useParams } from 'react-router';
+import Header from '../components/layout/Header.jsx';
+import Footer from '../components/layout/Footer.jsx';
+import 'tailwindcss/tailwind.css';
+import { ProposalDetailProvider } from '../contexts/ProposalDetailContext.jsx';
+import ProposalDetailContent from '../components/detailProposal/ProposalDetailContent.jsx';
 
 const ProposalDetail = () => {
-  const { travelPlanId } = useParams();
-  const navigate = useNavigate();
+  const { proposalId, travelPlanId } = useParams();
 
-  const onhandleCreatePlan = () => {
-    navigate(`/travel-plans/${travelPlanId}/proposals`);
-  };
-
-  return (
-    <ProposalDetailProvider travelPlanId={travelPlanId}>
-      <ProposalDetailContainer>
-        <Header />
-        <ContentContainer>
-          <ProposalContentWrapper>
-            <ProposalContent />
-          </ProposalContentWrapper>
-          <MapAndPlaceWrapper>
-            <MapWrapper>
-              <UserLocationMap />
-            </MapWrapper>
-            <PlaceListWrapper>
-              <PlaceList />
-            </PlaceListWrapper>
-          </MapAndPlaceWrapper>
-        </ContentContainer>
-        <ButtonPosition>
-          <AcceptButton onClick={onhandleCreatePlan}>
-            수락
-          </AcceptButton>
-        </ButtonPosition>
-          <Footer />
-      </ProposalDetailContainer>
-    </ProposalDetailProvider>
+  return(
+    <div className="flex flex-col min-h-screen bg-gray-100">
+      <Header />
+      <ProposalDetailProvider proposalId={proposalId} travelPlanId={travelPlanId}>
+        <ProposalDetailContent />
+      </ProposalDetailProvider>
+      <Footer />
+    </div>
   );
 };
-
 export default ProposalDetail;

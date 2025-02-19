@@ -15,7 +15,7 @@ const mapOptions = {
   fullscreenControl: false,
 };
 
-const PlaceMap = ({ coordinates, markers, onPlaceSelected }) => {
+const PlaceMap = ({ coordinates, markers, zoom, children}) => {
   // 마커 아이콘 옵션 (크기 30×30)
   const bananaIconObject = {
     url: bananaIcon,
@@ -24,12 +24,14 @@ const PlaceMap = ({ coordinates, markers, onPlaceSelected }) => {
     anchor: new window.google.maps.Point(15, 15),
   };
 
+
+  
   return (
     <div className="relative w-full h-full">
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={coordinates}
-        zoom={12}
+        zoom={zoom}
         options={mapOptions}
       >
         {/* 도시 중심 마커 */}
@@ -39,10 +41,12 @@ const PlaceMap = ({ coordinates, markers, onPlaceSelected }) => {
         {markers.map((marker, index) => (
           <Marker
             key={index}
-            position={{ lat: marker.latitude, lng: marker.longitude }}
+            position={{ lat: marker.lat, lng: marker.lng }}
             icon={bananaIconObject}
+            onClick={marker.onClick}
           />
         ))}
+        {children}
       </GoogleMap>
     </div>
   );

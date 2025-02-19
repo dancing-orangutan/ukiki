@@ -1,35 +1,91 @@
-import React, { useContext } from "react";
-import { LoadScript } from "@react-google-maps/api";
-import ProposalDetailContext from "../../contexts/ProposalDetailContext";
+import React, { useContext, useEffect, useState } from "react";
+import { LoadScript, InfoWindow } from "@react-google-maps/api";
 import PlaceMap from "../../services/map/PlaceMap";
 import { MapContainer } from "./style/UserLocationMap";
+import TravelPlanDetailContext from "../../contexts/TravelPlanDetailContext";
 
 const apiKey = import.meta.env.VITE_APP_GOOGLE_API_KEY;
 
-const UserLocationMap = () => {
-  const { proposal } = useContext(ProposalDetailContext);
+const UserLocationMap = ({ latitude, longitude }) => {
+  const { proposal } = useContext(TravelPlanDetailContext);
+  const [centerCoordinates, setCenterCoordinates] = useState({ lat: 37.5665, lng: 126.9780 }); // 서울 기본 좌표 설정
+  const [zoomLevel, setZoomLevel] = useState(12);
+  const [place, setPlace] = useState([]);
+  const [selectedMarker, setSelectedMarker] = useState(null);
 
-  if (!proposal || !proposal.data || !proposal.data.travelPlan) {
-    return <div>데이터 불러오기 실패</div>;
+  useEffect(() => {
+    if (proposal && proposal.data && proposal.data.travelPlan && proposal.data.travelPlan.places) {
+      const places = proposal.data.travelPlan.places;
+      setPlace(places);
+      // 첫 번째 장소의 위도와 경도로 지도 초기화
+      const firstPlace = places[0];
+      if (firstPlace) {
+        setCenterCoordinates({ lat: firstPlace.latitude, lng: firstPlace.longitude });
+        setZoomLevel(16);  // 첫 번째 장소에 맞춰 줌 레벨 설정
+      }
+    }
+  }, [proposal]);  
+
+  useEffect(() => {
+    // 만약 latitude와 longitude가 제공되면 해당 좌표로 지도 설정
+    if (latitude && longitude) {
+      setCenterCoordinates({ lat: latitude, lng: longitude });
+      setZoomLevel(16); 
+    }
+  }, [latitude, longitude]);
+
+  const handleMarkerClick = (place) => {
+    console.log('마커 클릭:', place);
+    setSelectedMarker(place);
+  };
+
+  if (!centerCoordinates) {
+    return <div>지도 로딩 중...</div>;
   }
-
-  const { travelPlanId, places } = proposal.data.travelPlan;
-  console.log("Travel Plan ID:", travelPlanId);
-
-  const centerCoordinates =
-    Array.isArray(places) && places.length > 0
-      ? { lat: places[0].latitude, lng: places[0].longitude }
-      : { lat: 37.5665, lng: 126.9780 };
 
   return (
     <MapContainer>
-      <LoadScript googleMapsApiKey={apiKey} libraries={['places']}>
-        <PlaceMap
-          coordinates={centerCoordinates}
-          markers={places}
-        />
-      </LoadScript>
-    </MapContainer>
+  <LoadScript googleMapsApiKey={apiKey} libraries={['places']}>
+    <PlaceMap
+      coordinates={centerCoordinates}
+      markers={place.map(place => ({
+        lat: place.latitude,
+        lng: place.longitude,
+        onClick: () => handleMarkerClick(place),
+      }))}
+      zoom={zoomLevel}
+    >
+      {selectedMarker && (
+        <InfoWindow
+          position={{
+            lat: selectedMarker.latitude,
+            lng: selectedMarker.longitude,
+          }}
+          onCloseClick={() => setSelectedMarker(null)}
+        >
+          <div style={{ width: "300px", minHeight: "100px" }} className="p-4">
+            <h3 className="text-lg font-bold">{selectedMarker?.name}</h3>
+            <div>태그:</div>
+            {selectedMarker.tags && selectedMarker.tags.length > 0 ? (
+              <div className="mt-2">
+                {selectedMarker.tags.map((tag, idx) => (
+                  <span
+                    key={tag.placeTagId || idx}
+                    className="text-xs bg-gray-200 px-1 py-0.5 rounded mr-1"
+                  >
+                    #{typeof tag === "object" ? tag.name : tag}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-gray-500">태그가 없습니다.</p>
+            )}
+          </div>
+        </InfoWindow>
+      )}
+    </PlaceMap>
+  </LoadScript>
+</MapContainer>
   );
 };
 
