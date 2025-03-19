@@ -8,18 +8,19 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import MyRoomsPage from './pages/MyRoomsPage';
-
 import MyProfile from './pages/MyProfilePage';
 import TravelPlanDetail from './pages/TravelPlanDetailPage';
 import UserVotePage from './pages/UserVotePage';
 import OAuthSuccessPage from './components/auth/OAuthSuccessPage';
 import CreateTravel from './pages/CreateTravelPage';
-import OpenViduPage from './pages/OpenViduPage';
+import MeetingPage from './pages/MeetingPage';
 import AOS from 'aos';
 import 'aos/dist/aos.css'; // AOS 스타일 불러오기
 import AgencyProposalDetailPage from './pages/AgencyProposalDetailPage';
 import ProposalDetailForUser from './pages/ProposalDetailForUserPage';
 import ProposalDetail from './pages/ProposalDetailPage';
+import ProposalStatus from './pages/ProposalStatusPage';
+import EasterEgg from './pages/EasterEggPage';
 
 const App = () => {
   useEffect(() => {
@@ -55,24 +56,17 @@ const App = () => {
 
         <Route path="/myprofile" element={<MyProfile />} />
 
-        <Route path="/myprofile" element={<MyProfile />} />
-        {/* 여행사 본인이 제시한 제안서 상세 조회 */}
-        {/* <Route
-          path="/agency-proposal-detail/:travelPlanId/:proposalId"
-          element={<AgencyProposalDetailPage />}
-        /> */}
-
-        <Route path="/meeting" element={<OpenViduPage />} />
+        <Route path="/meeting/:proposalId" element={<MeetingPage />} />
         <Route
           path="/proposal-detail/:travelPlanId/:proposalId"
           element={<ProposalDetailForUser />}
         />
-
-
         <Route
           path="/agency-proposal-detail/:travelPlanId/:proposalId"
           element={<ProposalDetail />}
         />
+        <Route path="/proposal" element={<ProposalStatus />} />
+        <Route path="/ukiki" element={<EasterEgg />} />
       </Routes>
     </Router>
   );

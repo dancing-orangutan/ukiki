@@ -5,8 +5,10 @@ import UserProfile from '../components/mypage/profile/UserProfile';
 import MyRooms from '../components/mypage/myroom/MyRooms';
 import OngoingProposals from '../components/mypage/company/OngoingProposals'; 
 import ReceivedProposals from '../components/mypage/company/ReceivedProposals'; 
+import AcceptedProposals from '../components/mypage/company/AcceptedProposals';  
 import useAuthStore from '../stores/authStore';
 import { TravelPlanProvider } from '../contexts/travelPlanContext';
+import { useLocation } from 'react-router';
 import { 
   MyProfileContainer, 
   MainContentWrapper, 
@@ -16,8 +18,9 @@ import {
 } from './style/MyProfilePageStyle';
 
 const MyProfile = () => {
+  const location = useLocation();
   const { userRole } = useAuthStore();
-  const [activeComponent, setActiveComponent] = useState('profile');
+  const [activeComponent, setActiveComponent] = useState(location.state?.activeComponent || 'profile');
 
   const renderContent = () => {
     if (activeComponent === 'profile') {
@@ -37,6 +40,13 @@ const MyProfile = () => {
         </TravelPlanProvider>
       );
     }
+    if (userRole === 'company' && activeComponent === 'AcceptedProposals') {  {/* 추가된 부분 */}
+      return (
+        <TravelPlanProvider>
+          <AcceptedProposals />
+        </TravelPlanProvider>
+      );
+    }
     return <MyRooms />;
   }
   
@@ -47,7 +57,10 @@ const MyProfile = () => {
         <GridWrapper>
           {/* 왼쪽 여백 */}
           <SidebarWrapper>
-            <Sidebar onMenuClick={setActiveComponent}/>
+            <Sidebar 
+            onMenuClick={setActiveComponent}
+            userRole={userRole}
+            />
           </SidebarWrapper>
           {/* 메인콘텐츠 */}
           <ContentWrapper>

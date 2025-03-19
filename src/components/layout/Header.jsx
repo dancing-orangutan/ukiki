@@ -10,6 +10,7 @@ import NavLink from '../common/NavLink';
 const Header = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { user, userRole, logout } = useAuthStore();
+  const [profileImage, setProfileImage] = useState(defaultProfile);
   const navigate = useNavigate();
   const location = useLocation();
   const [activeButton, setActiveButton] = useState(null);
@@ -19,6 +20,31 @@ const Header = () => {
       setActiveButton('createGroup');
     }
   }, [location.state]);
+
+  // user 정보에 profileImageUrl이 없으면, userRole에 따라 API 호출
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // 일반 사용자면 members, 여행사면 companies 엔드포인트 사용
+        const endpoint =
+          userRole === 'company'
+            ? '/api/v1/companies/profile'
+            : '/api/v1/members/profile';
+        const response = await publicRequest.get(endpoint);
+        if (response.status === 200 && response.data?.data?.profileImageUrl) {
+          setProfileImage(response.data.data.profileImageUrl);
+        }
+      } catch (error) {
+        console.error('프로필 정보 조회 실패:', error);
+      }
+    };
+
+    if (user && !user.profileImageUrl) {
+      fetchProfile();
+    } else if (user?.profileImageUrl) {
+      setProfileImage(user.profileImageUrl);
+    }
+  }, [user, userRole]);
 
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -84,22 +110,54 @@ const Header = () => {
           </>
         ) : userRole === 'company' ? (
           <>
+            <div className="items-center hidden space-x-6 md:flex">
+              <NavLink to="/proposal">제안 관리</NavLink>
+            </div>
             <div className="relative">
-              <Link
-                to="/myprofile"
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center space-x-2 focus:outline-none"
               >
                 <img
-                  src={defaultProfile}
+                  src={profileImage}
                   alt="프로필"
                   className="w-10 h-10 border border-gray-300 rounded-full"
                 />
-              </Link>
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 z-50 w-40 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg">
+                  <div className="md:hidden">
+                    <NavLink
+                      to="/proposal"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="block w-full px-4 py-2 text-gray-700 hover:bg-gray-100 text-left !justify-start"
+                      style={{ display: 'block', textAlign: 'left' }}
+                    >
+                      제안 관리
+                    </NavLink>
+                  </div>
+                  <Link
+                    to="/myprofile"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsDropdownOpen(false)}
+                  >
+                    마이페이지
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsDropdownOpen(false);
+                    }}
+                    className="block w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100"
+                  >
+                    로그아웃
+                  </button>
+                </div>
+              )}
             </div>
           </>
         ) : (
           <>
-            {/* 데스크탑 네비게이션: md 이상에서만 보임 */}
             <div className="items-center hidden space-x-6 md:flex">
               <NavLink to="/search-room">전체여행방</NavLink>
               <NavLink to="/myroom">내여행방</NavLink>
@@ -114,21 +172,19 @@ const Header = () => {
                 방만들기
               </button>
             </div>
-            {/* 공통: 프로필 드롭다운 */}
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center space-x-2 focus:outline-none"
               >
                 <img
-                  src={defaultProfile}
+                  src={profileImage}
                   alt="프로필"
                   className="w-10 h-10 border border-gray-300 rounded-full"
                 />
               </button>
               {isDropdownOpen && (
                 <div className="absolute right-0 z-50 w-40 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg">
-                  {/* 모바일 전용 메뉴: md 미만에서 보임 */}
                   <div className="md:hidden">
                     <Link
                       to="/search-room"

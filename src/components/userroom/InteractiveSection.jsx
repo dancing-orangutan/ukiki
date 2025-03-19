@@ -26,13 +26,7 @@ const InteractiveSection = ({
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [showTagInput, setShowTagInput] = useState(false);
   const [newTag, setNewTag] = useState('');
-  const [renderKey, setRenderKey] = useState(0); // GoogleMap 강제 리렌더링용
-
-  // ✅ WebSocket을 활용한 실시간 마커 업데이트
-  useEffect(() => {
-    console.log('✅ favorites 상태 변경됨:', favorites);
-    setRenderKey((prev) => prev + 1); // Google Map 강제 리렌더링
-  }, [favorites]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ✅ 도시 좌표 가져오기 (Google Geocoding API)
   useEffect(() => {
@@ -58,11 +52,16 @@ const InteractiveSection = ({
 
   // ✅ 마커 클릭 시 상태 업데이트
   const handleMarkerClick = (marker) => {
-    setSelectedMarker({ ...marker });
+    if (selectedMarker) {
+      setSelectedMarker(null); // 기존 InfoWindow 닫기
+    }
+    setTimeout(() => {
+      setSelectedMarker({ ...marker });
+    }, 10); // 약간의 딜레이 추가하여 InfoWindow 충돌 방지
   };
 
   const handleLikePlace = async (place) => {
-    if (isInteractionDisabled()) {
+    if (isInteractionDisabled) {
       Swal.fire(
         '알림',
         '현재 상태에서는 이 기능을 사용할 수 없습니다.',
@@ -78,7 +77,7 @@ const InteractiveSection = ({
 
     const travelPlanId = selectedCard.travelPlanId;
     const placeId = place.placeId;
-    const isLiked = place.likeYn; // 기존 좋아요 상태
+    const isLiked = place.likeYn;
     const totalMember = selectedCard?.member?.totalParticipants || 0;
     const placeName = place.name;
     let actionType;
@@ -112,15 +111,14 @@ const InteractiveSection = ({
         actionType = 'LIKE';
       }
 
-      // ✅ 상태 업데이트 - 새로운 배열을 반환하여 리렌더링 유도
+      // ✅ 상태 업데이트
       setFavorites((prev) => {
         const newFavorites = prev.map((fav) =>
           fav.placeId === placeId ? { ...updatedMarker } : fav,
         );
-        return [...newFavorites]; // 새로운 배열을 반환해 참조 변경
+        return [...newFavorites];
       });
 
-      // ✅ 현재 선택된 마커도 업데이트 (UI 즉시 반영)
       setSelectedMarker((prev) =>
         prev && prev.placeId === placeId ? { ...updatedMarker } : prev,
       );
@@ -128,7 +126,7 @@ const InteractiveSection = ({
       // ✅ WebSocket을 통해 실시간으로 마커 상태 변경 전송
       if (stompClient && stompClient.connected) {
         const wsData = {
-          action: actionType, // ✅ Action Enum 값 전송
+          action: actionType,
           placeName,
           travelPlanId,
         };
@@ -144,9 +142,9 @@ const InteractiveSection = ({
     }
   };
 
-  // 태그 삭제 함수 (내가 쓴 태그인 경우 클릭하면 삭제)
+  // 태그 삭제 함수
   const handleTagDelete = async (placeId, tagId) => {
-    if (isInteractionDisabled()) {
+    if (isInteractionDisabled) {
       Swal.fire(
         '알림',
         '현재 상태에서는 이 기능을 사용할 수 없습니다.',
@@ -170,12 +168,10 @@ const InteractiveSection = ({
             `/api/v1/travel-plans/${selectedCard.travelPlanId}/tags/${tagId}`,
           );
           if (response.status === 200) {
-            // 선택된 마커의 태그 업데이트
             setSelectedMarker((prev) => ({
               ...prev,
               tags: prev.tags.filter((tag) => tag.placeTagId !== tagId),
             }));
-            // favorites 배열 내 해당 마커의 태그 업데이트
             setFavorites((prev) =>
               prev.map((marker) =>
                 marker.placeId === placeId
@@ -200,7 +196,7 @@ const InteractiveSection = ({
 
   // 태그 추가 함수
   const handleTagSubmit = async () => {
-    if (isInteractionDisabled()) {
+    if (isInteractionDisabled) {
       Swal.fire(
         '알림',
         '현재 상태에서는 이 기능을 사용할 수 없습니다.',
@@ -208,8 +204,9 @@ const InteractiveSection = ({
       );
       return;
     }
+    if (newTag.trim() === '' || isSubmitting) return;
 
-    if (newTag.trim() === '') return;
+    setIsSubmitting(true);
     try {
       const response = await publicRequest.post(
         `/api/v1/travel-plans/${selectedCard.travelPlanId}/places/${selectedMarker.placeId}/tags`,
@@ -240,7 +237,7 @@ const InteractiveSection = ({
         // ✅ WebSocket을 통해 태그 추가 이벤트 전송
         if (stompClient && stompClient.connected) {
           const wsData = {
-            action: 'ADD_TAG', // ✅ Action Enum 값 전송
+            action: 'ADD_TAG',
             placeName: selectedMarker.name,
             travelPlanId: selectedCard.travelPlanId,
           };
@@ -252,11 +249,12 @@ const InteractiveSection = ({
         }
 
         setNewTag('');
-        setShowTagInput(false);
       }
     } catch (error) {
       console.error('태그 추가 실패:', error);
       Swal.fire('알림', '태그 추가에 실패했습니다.', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -283,7 +281,6 @@ const InteractiveSection = ({
       {/* 지도 영역 */}
       <div className="w-full h-full">
         <GoogleMap
-          key={renderKey}
           mapContainerStyle={{ width: '100%', height: '100%' }}
           center={mapCenter}
           zoom={12}
@@ -294,7 +291,7 @@ const InteractiveSection = ({
             fullscreenControl: false,
           }}
         >
-          {/* 즐겨찾기 마커들을 OverlayView를 이용해 커스텀 마커로 표시 */}
+          {/* 즐겨찾기 마커들을 OverlayView로 표시 */}
           {favorites.map((marker, index) => (
             <OverlayView
               key={index}
@@ -350,7 +347,7 @@ const InteractiveSection = ({
                     <h4 className="text-sm font-semibold">태그:</h4>
                     <button
                       onClick={() => {
-                        if (isInteractionDisabled()) {
+                        if (isInteractionDisabled) {
                           Swal.fire(
                             '알림',
                             '현재 상태에서는 이 기능을 사용할 수 없습니다.',
@@ -371,6 +368,12 @@ const InteractiveSection = ({
                         type="text"
                         value={newTag}
                         onChange={(e) => setNewTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.repeat) {
+                            e.preventDefault();
+                            handleTagSubmit();
+                          }
+                        }}
                         placeholder="태그 입력 (최대 20자)"
                         maxLength={20}
                         className="px-2 py-1 border rounded"
@@ -383,6 +386,7 @@ const InteractiveSection = ({
                       </button>
                     </div>
                   )}
+
                   {selectedMarker.tags && selectedMarker.tags.length > 0 ? (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {selectedMarker.tags.map((tag, idx) => (
@@ -412,7 +416,7 @@ const InteractiveSection = ({
         </GoogleMap>
       </div>
 
-      {/* 채팅창/버튼: fixed로 화면 우측 하단에 고정 */}
+      {/* 채팅창/버튼 */}
       <div className="fixed bottom-4 right-4 z-[9999] ">
         {isChatOpen ? (
           <div className="relative w-96 h-[500px] rounded-lg bg-white shadow-lg overflow-y-auto">

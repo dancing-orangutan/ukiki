@@ -6,7 +6,6 @@ import CardList from '../components/searchroom/CardList';
 import Sidebar from '../components/searchroom/SideBar';
 import { publicRequest } from '../hooks/requestMethod';
 import Swal from 'sweetalert2';
-import { IoIosArrowBack } from 'react-icons/io';
 
 const SearchRoom = () => {
   const location = useLocation();
@@ -52,7 +51,7 @@ const SearchRoom = () => {
 
   const statusMap = {
     IN_PROGRESS: '진행중',
-    BIDDING: '입찰중',
+    BIDDING: '요청중',
     BOOKING: '예약중',
     CONFIRMED: '여행확정',
   };
@@ -99,10 +98,7 @@ const SearchRoom = () => {
         <Sidebar onFilter={handleFilter} />
         <div className="flex-1 p-4">
           {/* 오른쪽 상단에 도착 도시 필터 선택창 추가 */}
-          <div className="flex justify-between mb-4">
-            <button onClick={() => navigate(-1)} className="ml-4 text-brown">
-              <IoIosArrowBack size={32} className="text-3xl font-bold" />
-            </button>
+          <div className="flex justify-end mb-4">
             <select
               value={selectedArrivalCity}
               onChange={(e) => setSelectedArrivalCity(e.target.value)}

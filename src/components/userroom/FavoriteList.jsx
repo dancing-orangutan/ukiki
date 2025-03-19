@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { CiCirclePlus } from 'react-icons/ci';
 import Swal from 'sweetalert2';
 import { stompClient } from '../../components/userroom/WebSocketComponent';
@@ -14,9 +14,10 @@ const FavoriteList = ({
   const [expandedPlaceId, setExpandedPlaceId] = useState(null);
   const [showTagInput, setShowTagInput] = useState(false);
   const [newTag, setNewTag] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false); // 중복 제출 방지 상태
   const travelPlanId = selectedCard.travelPlanId;
+  const inputRef = useRef(null);
 
-  // WebSocket 구독: /sub/likes 채널로부터 좋아요 업데이트 메시지를 받아 favorites 업데이트
   useEffect(() => {
     if (stompClient && stompClient.connected) {
       const subscription = stompClient.subscribe('/sub/likes', (message) => {
@@ -38,7 +39,6 @@ const FavoriteList = ({
     }
   }, [setFavorites]);
 
-  // MapSearchBar에서 선택 시 부모의 favorites에 추가
   const handlePlaceSelected = (newPlace) => {
     setFavorites((prev) => {
       if (prev.some((fav) => fav.name === newPlace.name)) return prev;
@@ -50,25 +50,27 @@ const FavoriteList = ({
   };
 
   const sortedWishlists = useMemo(() => {
-    return [...favorites].sort((a, b) => b.likeCount - a.likeCount);
+    return [...favorites].sort((a, b) => {
+      if (b.likeCount !== a.likeCount) {
+        return b.likeCount - a.likeCount; // 좋아요 수 내림차순
+      }
+      return a.name.localeCompare(b.name); // 이름 가나다순
+    });
   }, [favorites]);
 
-  // 장소 클릭 시 지도 중심을 해당 장소의 좌표로 변경
   const handlePlaceClick = (place) => {
     if (place.latitude && place.longitude) {
       setMapCenter({ lat: place.latitude, lng: place.longitude });
     }
   };
+
   const handleLikeToggle = async (place) => {
     const placeId = place.placeId;
     const isLiked = place.isLiked;
     const totalMember = selectedCard?.member?.totalParticipants || 0;
     const travelPlanId = selectedCard?.travelPlanId;
-
     const placeName = place.name;
     let actionType;
-
-    console.log(isLiked);
 
     try {
       let updatedPlace;
@@ -98,11 +100,10 @@ const FavoriteList = ({
 
       if (stompClient && stompClient.connected) {
         const wsData = {
-          action: actionType, // ✅ Action Enum 값 전송
+          action: actionType,
           placeName,
           travelPlanId,
         };
-        // 웹소켓 전송용 데이터
         stompClient.publish({
           destination: '/pub/actions',
           body: JSON.stringify(wsData),
@@ -153,23 +154,20 @@ const FavoriteList = ({
             Swal.fire('성공', '태그가 삭제되었습니다.', 'success');
           }
 
-          // ✅ placeId를 기반으로 placeName 가져오기
           const place = favorites.find((fav) => fav.placeId === placeId);
           if (!place) {
             console.error('🚨 태그 삭제 실패: 해당 장소를 찾을 수 없습니다.');
             return;
           }
 
-          const placeName = place.name; // ✅ placeName 가져오기
+          const placeName = place.name;
 
-          // ✅ WebSocket 메시지 전송
           if (stompClient && stompClient.connected) {
             const wsData = {
-              action: 'REMOVE_TAG', // ✅ Action Enum 값 전송
-              placeName, // ✅ placeName 추가
+              action: 'REMOVE_TAG',
+              placeName,
               travelPlanId,
             };
-
             stompClient.publish({
               destination: '/pub/actions',
               body: JSON.stringify(wsData),
@@ -209,16 +207,17 @@ const FavoriteList = ({
 
   const handleTagSubmit = async (e) => {
     e.stopPropagation();
-    if (newTag.trim() === '') return;
+    if (newTag.trim() === '' || isSubmitting) return; // 빈 값 또는 제출 중이면 리턴
+    setIsSubmitting(true); // 제출 시작
 
-    // expandedPlaceId를 기반으로 placeName 가져오기
     const place = favorites.find((fav) => fav.placeId === expandedPlaceId);
     if (!place) {
       console.error('🚨 태그 추가 실패: 해당 장소를 찾을 수 없습니다.');
+      setIsSubmitting(false);
       return;
     }
 
-    const placeName = place.name; // ✅ placeName 가져오기
+    const placeName = place.name;
 
     try {
       const response = await publicRequest.post(
@@ -228,11 +227,10 @@ const FavoriteList = ({
 
       if (stompClient && stompClient.connected) {
         const wsData = {
-          action: 'ADD_TAG', // ✅ Action Enum 값 전송
-          placeName, // ✅ placeName 추가
+          action: 'ADD_TAG',
+          placeName,
           travelPlanId,
         };
-
         stompClient.publish({
           destination: '/pub/actions',
           body: JSON.stringify(wsData),
@@ -259,17 +257,21 @@ const FavoriteList = ({
           ),
         );
         setNewTag('');
-        setShowTagInput(false);
+        // 입력창은 유지한 채 포커스를 재설정
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
       }
     } catch (error) {
       console.error('태그 추가 실패:', error);
       Swal.fire('알림', '태그 추가에 실패했습니다.', 'error');
+    } finally {
+      setIsSubmitting(false); // 제출 완료
     }
   };
 
   return (
     <div>
-      {/* MapSearchBar */}
       <div className="sticky top-0 z-20 m-1 bg-white rounded-lg shadow-md">
         <MapSearchBar
           onPlaceSelected={handlePlaceSelected}
@@ -282,7 +284,6 @@ const FavoriteList = ({
       </div>
       <div className="flex flex-col h-screen">
         <div className="flex-1 overflow-y-auto no-scrollbar">
-          {/* 찜한 장소 목록 */}
           {sortedWishlists.map((item, index) => (
             <div
               key={index}
@@ -353,9 +354,16 @@ const FavoriteList = ({
                           type="text"
                           value={newTag}
                           onChange={handleTagInputChange}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleTagSubmit(e);
+                            }
+                          }}
                           placeholder="태그를 입력해주세요."
                           className="px-2 py-1 border rounded"
                           maxLength={20}
+                          ref={inputRef}
                         />
                         <button
                           onClick={(e) => {

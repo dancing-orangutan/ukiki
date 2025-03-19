@@ -4,6 +4,7 @@ import { publicRequest } from '../../hooks/requestMethod';
 import Swal from 'sweetalert2';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import InquiryCard from './InquiryCard'; // 위에서 작성한 InquiryCard 컴포넌트 import
 
 const ProposalDetailContact = () => {
   const { travelPlanId, proposalId } = useParams();
@@ -20,6 +21,7 @@ const ProposalDetailContact = () => {
         `/api/v1/travel-plans/${travelPlanId}/proposals/${proposalId}/inquiries`,
       );
       if (response.status === 200) {
+        console.log('문의사항 조회 결과:', response.data.data);
         setInquiries(response.data.data);
       }
     } catch (error) {
@@ -70,14 +72,6 @@ const ProposalDetailContact = () => {
           >
             문의하기
           </button>
-          <button
-            onClick={() =>
-              Swal.fire('화상채팅', '화상채팅 기능은 곧 제공됩니다.', 'info')
-            }
-            className="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600"
-          >
-            화상채팅하기
-          </button>
         </div>
       </div>
       {/* 문의 작성 폼 */}
@@ -122,14 +116,11 @@ const ProposalDetailContact = () => {
         ) : (
           <div className="space-y-4">
             {inquiries.map((inquiry) => (
-              <div
+              <InquiryCard
                 key={inquiry.id}
-                data-aos="fade-up"
-                className="p-4 bg-white border rounded shadow-sm"
-              >
-                <h4 className="text-lg font-bold">{inquiry.title}</h4>
-                <p className="mt-2">{inquiry.content}</p>
-              </div>
+                inquiry={inquiry}
+                onSubmitAnswer={() => {}}
+              />
             ))}
           </div>
         )}

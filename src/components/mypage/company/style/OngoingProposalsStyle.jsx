@@ -1,5 +1,5 @@
 // ./styled/OngoingProposalsStyle.jsx
-import styled from "styled-components";
+import styled from 'styled-components';
 
 // 전체 컨테이너
 export const Container = styled.div`
@@ -49,7 +49,7 @@ export const Title = styled.h6`
 
 // 테이블 스타일
 export const TableWrapper = styled.div`
-  width: 870px;
+  width: 910px;
   padding: 0;
   overflow-x: auto;
   overflow-x: hidden;
@@ -61,16 +61,14 @@ export const Table = styled.table`
   border-top: 1px solid #e2e8f0;
   border-bottom: 1px solid #e2e8f0;
   color: #4a5568;
+  table-layout: fixed; /* 컬럼의 너비를 균등하게 고정 */
 `;
 
 export const TableHead = styled.thead`
   text-align: bottom;
-
 `;
 
-export const TableHeadRow = styled.tr`
-
-`;
+export const TableHeadRow = styled.tr``;
 
 export const TableHeadCell = styled.th`
   padding: 15px;
@@ -83,20 +81,9 @@ export const TableHeadCell = styled.th`
   font-size: 1.5625rem;
   color: #cbd5e0;
   opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
-
-export const TableBody = styled.tbody``;
-
-export const TableRow = styled.tr`
-  &:hover {
-    cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 입체적인 그림자 추가 */
-    transform: scale(1.02); /* 살짝 커지는 효과 */
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* 부드러운 애니메이션 */
-  }
-
-`;
-
 
 export const TableCell = styled.td`
   padding: 1rem;
@@ -104,6 +91,20 @@ export const TableCell = styled.td`
   background-color: transparent;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
+  font-size: 1.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+export const TableBody = styled.tbody``;
+
+export const TableRow = styled.tr`
+  &:hover {
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: scale(1.02);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
 `;
 
 export const Status = styled.span`
@@ -126,7 +127,6 @@ export const Status = styled.span`
         return '#FFFFFF';
     }
   }};
-
   background-color: ${(props) => {
     switch (props.status) {
       case 'D':
@@ -141,4 +141,55 @@ export const Status = styled.span`
         return 'gray';
     }
   }};
+`;
+
+// 페이지네이션 스타일 추가
+export const PaginationWrapper = styled.div`
+  /* ReactPaginate가 생성하는 ul 태그에 적용 */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    list-style: none; /* ul 기본 스타일 제거 */
+    padding: 0; /* ul 기본 패딩 제거 */
+    margin: 40px 0; /* 필요하면 여백 설정 */
+  }
+
+  /* 각 페이지 번호를 감싸는 li */
+  .page-item {
+    margin: 0 5px;
+  }
+
+  /* 각 페이지 번호의 링크(a 태그) */
+  .page-item a {
+    background-color: #ffffff;
+    color: #412b2b;
+    border: 1px solid #ddd;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none; /* 밑줄 제거 */
+    font-weight: bold;
+    transition: background-color 0.3s, color 0.3s;
+    cursor: pointer;
+  }
+
+  .page-item a:hover {
+    background-color: #412b2b;
+    color: #ffd21c;
+  }
+
+  /* 비활성화된 버튼(이전, 다음이 없는 경우 등) */
+  .previous-item.disabled a,
+  .next-item.disabled a {
+    background-color: #f1f1f1;
+    color: #999;
+    cursor: not-allowed;
+  }
+
+  /* 활성화된 페이지(현재 페이지) */
+  .active a {
+    background-color: #412b2b;
+    color: #ffd21c;
+  }
 `;

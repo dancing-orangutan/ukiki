@@ -65,7 +65,20 @@ function RoomModal({
       );
       return;
     }
-
+    // 최대 인원 초과 체크 (selectedCard.maxPeople: 최대 허용 인원)
+    if (
+      totalPeople + selectedCard.currentParticipants >
+      selectedCard.maxPeople
+    ) {
+      Swal.fire(
+        '알림',
+        `최대 ${
+          selectedCard.maxPeople - selectedCard.currentParticipants
+        }명을 초과할 수 없습니다.`,
+        'warning',
+      );
+      return;
+    }
     const travelPlanId = selectedCard.travelPlanId;
     const requestBody = {
       adultCount: people.adult,
@@ -80,8 +93,11 @@ function RoomModal({
       );
       console.log('✅ 여행방 입장 성공:', response.data);
       console.log('📌 넘겨지는 selectedCard:', response.data.data.travelPlan);
+      // 입장 API 호출 성공 시, 좋아요 수 알림(최대 10명 반영)
+      const likeCount = Math.min(totalPeople, 10);
+
       navigate(`/user-room/${response.data.data.travelPlan.travelPlanId}`, {
-        state: { selectedCard: response.data.data.travelPlan },
+        state: { selectedCard: response.data.data.travelPlan, likeCount },
       });
     } catch (error) {
       console.error('🚨 여행방 입장 실패:', error);

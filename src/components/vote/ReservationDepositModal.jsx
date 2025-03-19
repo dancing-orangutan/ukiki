@@ -5,7 +5,6 @@ import Swal from 'sweetalert2';
 import KakaoPayTest from './KakaoPayTest';
 import { IoIosCloseCircle } from 'react-icons/io';
 import { useNavigate } from 'react-router-dom';
-import { IoIosArrowBack } from 'react-icons/io';
 
 const ReservationDepositModal = ({ travelPlanId, proposalId, onClose }) => {
   const navigate = useNavigate();
@@ -50,6 +49,14 @@ const ReservationDepositModal = ({ travelPlanId, proposalId, onClose }) => {
   // 1단계: 모든 여행자 정보가 올바르게 입력되었는지 확인한 후 결제 단계로 진행
   const handleNext = () => {
     for (let traveler of travelers) {
+      if (traveler.phoneNumber.length !== 11) {
+        Swal.fire(
+          '유효성 오류',
+          '전화번호는 11자리 숫자로 입력해주세요',
+          'warning',
+        );
+        return;
+      }
       if (
         !traveler.koreanName.trim() ||
         !traveler.englishName.trim() ||
@@ -236,14 +243,15 @@ const ReservationDepositModal = ({ travelPlanId, proposalId, onClose }) => {
                       type="text"
                       placeholder="전화번호"
                       value={traveler.phoneNumber}
-                      onChange={(e) =>
-                        handleTravelerChange(
-                          index,
-                          'phoneNumber',
-                          e.target.value,
-                        )
-                      }
+                      onChange={(e) => {
+                        // 숫자만 허용하고 11자리로 제한
+                        const value = e.target.value
+                          .replace(/[^0-9]/g, '')
+                          .slice(0, 11);
+                        handleTravelerChange(index, 'phoneNumber', value);
+                      }}
                       className="w-full p-2 border rounded"
+                      maxLength="11"
                     />
                   </div>
                 </div>
@@ -268,12 +276,6 @@ const ReservationDepositModal = ({ travelPlanId, proposalId, onClose }) => {
         )}
         {step === 2 && (
           <div className="min-h-[500px] flex flex-col items-center justify-center">
-            {/* 뒤로가기 버튼 추가 */}
-            <div className="flex justify-start w-full mb-4">
-              <button onClick={() => setStep(1)} className="ml-4 text-brown">
-                <IoIosArrowBack size={32} className="text-3xl font-bold" />
-              </button>
-            </div>
             <KakaoPayTest onPaymentComplete={handlePaymentComplete} />
           </div>
         )}

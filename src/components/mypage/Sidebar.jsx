@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaUser, FaHistory, FaSignOutAlt } from 'react-icons/fa';
 import SidebarItem from './SidebarItem';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -10,6 +10,11 @@ const Sidebar = ({ onMenuClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { userRole } = useAuthStore();
+  const [activeItem, setActiveItem] = useState(location.pathname);
+
+  useEffect(() => {
+    setActiveItem(location.pathname);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -43,41 +48,54 @@ const Sidebar = ({ onMenuClick }) => {
   };
 
   const menuItems =
-    // 여행사인 경우
-    userRole === 'company'
+    userRole === 'company' && location.pathname.includes('/proposal')
       ? [
-        {
-          label: '제시받은 목록',
-          onClick: () => onMenuClick('ReceivedProposals'),
-          icon: <FaHistory />,
-        },
-        {
-          label: '진행중인 목록',
-          onClick: () => onMenuClick('OngoingProposals'),
-          icon: <FaHistory />,
-        },
-        { label: '프로필', onClick: () => onMenuClick('profile'), icon: <FaUser /> },
+          {
+            label: '패키지 의뢰',
+            onClick: () => onMenuClick('receivedProposals'),
+            icon: <FaHistory />,
+            to: '/received-proposals',
+          },
+          {
+            label: '제시 현황',
+            onClick: () => onMenuClick('ongoingProposals'),
+            icon: <FaHistory />,
+            to: '/ongoing-proposals',
+          },
+          {
+            label: '여행 성사 내역',
+            onClick: () => onMenuClick('AcceptedProposals'),
+            icon: <FaHistory />,
+            to: '/accepted-proposals',
+          },
+        ]
+      : userRole === 'company'
+      ? [
+          {
+            label: '프로필',
+            onClick: () => onMenuClick('profile'),
+            icon: <FaUser />,
+            to: '/profile',
+          },
           {
             label: '로그아웃',
-            href: '/',
-            icon: <FaSignOutAlt />,
             onClick: handleLogout,
+            icon: <FaSignOutAlt />,
+            to: '/',
           },
         ]
       : [
-          // 일반 사용자인 경우
-          { label: '내 여행', href: '/mypage/myroom', icon: <FaHistory /> },
-          { label: '프로필', href: '/mypage/profile', icon: <FaUser /> },
+          { label: '프로필', to: '/myprofile', icon: <FaUser /> },
           {
             label: '로그아웃',
-            href: '/',
-            icon: <FaSignOutAlt />,
             onClick: handleLogout,
+            icon: <FaSignOutAlt />,
+            to: '/',
           },
         ];
 
   return (
-    <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r p-4">
+    <aside className="w-full p-4 bg-white border-b md:w-64 md:border-b-0">
       <nav>
         <ul className="flex flex-row items-center space-x-6 md:flex-col md:items-start md:space-x-0 md:space-y-6">
           {menuItems.map((item) => (
@@ -85,9 +103,9 @@ const Sidebar = ({ onMenuClick }) => {
               key={item.label}
               icon={item.icon}
               label={item.label}
-              href={item.href}
+              to={item.to}
               active={
-                item.label !== '로그아웃' && location.pathname === item.href
+                item.label !== '로그아웃' && location.pathname === item.to
               }
               onClick={item.onClick}
             />
