@@ -113,7 +113,7 @@
 
 ## 🖼️ 와이어프레임
 
-[![우끼끼 와이어프레임 미리보기](https://github.com/user-attachments/assets/dc3fb195-5816-4d92-88f4-5914b8ce4455)](https://www.figma.com/design/Y6gwYWBepPRNpY430a2Z3N/%EC%9A%B0%EB%81%BC%EB%81%BC-?node-id=84-2)
+[![와이어프레임](https://github.com/user-attachments/assets/dc3fb195-5816-4d92-88f4-5914b8ce4455)](https://www.figma.com/design/Y6gwYWBepPRNpY430a2Z3N/%EC%9A%B0%EB%81%BC%EB%81%BC-?node-id=84-2)
 
 ---
 
